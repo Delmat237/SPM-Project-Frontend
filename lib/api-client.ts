@@ -40,7 +40,12 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     requestHeaders.set("Content-Type", "application/json");
   }
 
-  if (typeof window !== "undefined") {
+  // Les endpoints d'authentification (login, register, reset-password…) sont publics :
+  // on ne doit JAMAIS y attacher de token, sinon un token expiré ferait échouer le login
+  // avec un 403 renvoyé par le JwtAuthenticationFilter avant même le traitement du login.
+  const isAuthEndpoint = endpoint.startsWith("/api/auth/");
+
+  if (typeof window !== "undefined" && !isAuthEndpoint) {
     const token = localStorage.getItem("token");
     if (token) {
       // A valid JWT has exactly 2 periods (header.payload.signature)
@@ -69,7 +74,6 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   if (!response.ok) {
     // Token expiré ou invalide → nettoyer la session et rediriger vers le login
     if ((response.status === 401 || response.status === 403) && typeof window !== "undefined") {
-      const isAuthEndpoint = endpoint.startsWith("/api/auth/");
       if (!isAuthEndpoint) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
