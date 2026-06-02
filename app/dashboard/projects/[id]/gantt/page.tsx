@@ -7,7 +7,9 @@ import {
   Trello,
   Users,
   Settings,
-  Calendar
+  Calendar,
+  ListChecks,
+  BarChart2,
 } from "@/lib/icons";
 import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
@@ -80,10 +82,12 @@ export default function GanttPage({ params }: { params: Promise<{ id: string }> 
   }, [id]);
 
   const tabs = [
-    { name: "Kanban",     href: `/dashboard/projects/${id}/kanban`,   icon: Trello },
-    { name: "Gantt",      href: `/dashboard/projects/${id}/gantt`,    icon: GanttChartSquare, active: true },
-    { name: "Membres",    href: `/dashboard/projects/${id}/members`,  icon: Users },
-    { name: "Paramètres", href: `/dashboard/projects/${id}/settings`, icon: Settings },
+    { name: "Kanban",     href: `/dashboard/projects/${id}/kanban`,    icon: Trello },
+    { name: "Backlog",    href: `/dashboard/projects/${id}/backlog`,   icon: ListChecks },
+    { name: "Gantt",      href: `/dashboard/projects/${id}/gantt`,     icon: GanttChartSquare, active: true },
+    { name: "Analytics",  href: `/dashboard/projects/${id}/analytics`, icon: BarChart2 },
+    { name: "Membres",    href: `/dashboard/projects/${id}/members`,   icon: Users },
+    { name: "Paramètres", href: `/dashboard/projects/${id}/settings`,  icon: Settings },
   ];
 
   return (

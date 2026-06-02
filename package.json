@@ -1,7 +1,12 @@
 {
-  "name": "trello",
+  "name": "spm",
   "version": "0.1.0",
   "private": true,
+  "contributors": [
+    { "email": "tipainess@gmail.com" },
+    { "email": "samuelftagat@gmail.com" },
+    { "email": "maevatchounou@gmail.com" }
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",

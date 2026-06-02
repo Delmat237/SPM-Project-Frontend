@@ -184,6 +184,29 @@ export interface WsProjectEvent {
   payload: Record<string, unknown>;
 }
 
+export interface CommentResponse {
+  id: number;
+  content: string;
+  authorId: number;
+  authorName: string;
+  authorEmail: string;
+  taskId: number;
+  taskKey: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AttachmentResponse {
+  id: number;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+  taskId: number;
+  uploadedById: number;
+  uploadedByName: string;
+  createdAt: string;
+}
+
 export function adaptProject(p: ProjectResponse): Project {
   return {
     id: String(p.id),

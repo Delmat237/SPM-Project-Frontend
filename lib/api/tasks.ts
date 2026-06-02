@@ -66,4 +66,12 @@ export const tasksApi = {
 
   restore: (projectId: string | number, taskId: string | number) =>
     apiClient.patch<TaskResponse>(`/api/projects/${projectId}/tasks/${taskId}/restore`),
+
+  subtasks: {
+    list: (projectId: string | number, taskId: string | number) =>
+      apiClient.get<TaskResponse[]>(`/api/projects/${projectId}/tasks/${taskId}/subtasks`),
+
+    create: (projectId: string | number, taskId: string | number, title: string) =>
+      apiClient.post<TaskResponse>(`/api/projects/${projectId}/tasks/${taskId}/subtasks`, { title }),
+  },
 };

@@ -8,7 +8,9 @@ import {
   Trello,
   Users,
   Settings,
-  ChevronRight
+  ChevronRight,
+  ListChecks,
+  BarChart2,
 } from "@/lib/icons";
 import TaskCard from "@/components/ui/TaskCard";
 import TaskDetailModal from "@/components/ui/TaskDetailModal";
@@ -30,6 +32,7 @@ const COLUMNS: { title: string; status: TaskStatus }[] = [
   { title: "À faire",  status: "todo" },
   { title: "En cours", status: "in_progress" },
   { title: "En revue", status: "in_review" },
+  { title: "Bloqué",   status: "blocked" },
   { title: "Terminé",  status: "done" },
 ];
 
@@ -80,10 +83,12 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
   const onDragOver = (e: React.DragEvent) => { e.preventDefault(); };
 
   const tabs = [
-    { name: "Kanban",     href: `/dashboard/projects/${id}/kanban`,   icon: Trello,          active: true },
-    { name: "Gantt",      href: `/dashboard/projects/${id}/gantt`,    icon: GanttChartSquare },
-    { name: "Membres",    href: `/dashboard/projects/${id}/members`,  icon: Users },
-    { name: "Paramètres", href: `/dashboard/projects/${id}/settings`, icon: Settings },
+    { name: "Kanban",     href: `/dashboard/projects/${id}/kanban`,    icon: Trello,          active: true },
+    { name: "Backlog",    href: `/dashboard/projects/${id}/backlog`,   icon: ListChecks },
+    { name: "Gantt",      href: `/dashboard/projects/${id}/gantt`,     icon: GanttChartSquare },
+    { name: "Analytics",  href: `/dashboard/projects/${id}/analytics`, icon: BarChart2 },
+    { name: "Membres",    href: `/dashboard/projects/${id}/members`,   icon: Users },
+    { name: "Paramètres", href: `/dashboard/projects/${id}/settings`,  icon: Settings },
   ];
 
   return (

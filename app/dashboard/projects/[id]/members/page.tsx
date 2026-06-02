@@ -12,7 +12,9 @@ import {
   Settings,
   Mail,
   ShieldCheck,
-  Trash2
+  Trash2,
+  ListChecks,
+  BarChart2,
 } from "@/lib/icons";
 import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
@@ -98,10 +100,12 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
   };
 
   const tabs = [
-    { name: "Kanban",     href: `/dashboard/projects/${id}/kanban`,   icon: Trello },
-    { name: "Gantt",      href: `/dashboard/projects/${id}/gantt`,    icon: GanttChartSquare },
-    { name: "Membres",    href: `/dashboard/projects/${id}/members`,  icon: Users, active: true },
-    { name: "Paramètres", href: `/dashboard/projects/${id}/settings`, icon: Settings },
+    { name: "Kanban",     href: `/dashboard/projects/${id}/kanban`,    icon: Trello },
+    { name: "Backlog",    href: `/dashboard/projects/${id}/backlog`,   icon: ListChecks },
+    { name: "Gantt",      href: `/dashboard/projects/${id}/gantt`,     icon: GanttChartSquare },
+    { name: "Analytics",  href: `/dashboard/projects/${id}/analytics`, icon: BarChart2 },
+    { name: "Membres",    href: `/dashboard/projects/${id}/members`,   icon: Users, active: true },
+    { name: "Paramètres", href: `/dashboard/projects/${id}/settings`,  icon: Settings },
   ];
 
   return (

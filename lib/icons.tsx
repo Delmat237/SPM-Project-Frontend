@@ -381,6 +381,45 @@ export const ExternalLink = icon(<>
   <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
 </>);
 
+export const ListChecks = icon(<>
+  <path d="m3 17 2 2 4-4" />
+  <path d="m3 7 2 2 4-4" />
+  <path d="M13 6h8" />
+  <path d="M13 12h8" />
+  <path d="M13 18h8" />
+</>);
+
+export const BarChart2 = icon(<>
+  <line x1="18" x2="18" y1="20" y2="10" />
+  <line x1="12" x2="12" y1="20" y2="4" />
+  <line x1="6" x2="6" y1="20" y2="14" />
+</>);
+
+export const TrendingUp = icon(<>
+  <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+  <polyline points="16 7 22 7 22 13" />
+</>);
+
+export const AlertCircle = icon(<>
+  <circle cx="12" cy="12" r="10" />
+  <line x1="12" x2="12" y1="8" y2="12" />
+  <line x1="12" x2="12.01" y1="16" y2="16" />
+</>);
+
+export const ArrowUpDown = icon(<>
+  <path d="m21 16-4 4-4-4" />
+  <path d="M17 20V4" />
+  <path d="m3 8 4-4 4 4" />
+  <path d="M7 4v16" />
+</>);
+
+export const ChevronDown = icon(<polyline points="6 9 12 15 18 9" />);
+
+export const Edit3 = icon(<>
+  <path d="M12 20h9" />
+  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+</>);
+
 export function Google({ className = "w-4 h-4" }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
