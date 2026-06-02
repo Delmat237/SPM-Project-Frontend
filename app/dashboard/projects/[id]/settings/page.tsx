@@ -4,7 +4,7 @@ import { useState, useEffect, use } from "react";
 import {
   BarChart3, Bell, Calendar, ChevronRight, Clock,
   GanttChartSquare, Globe, Trello, Users, Settings,
-  ShieldAlert, Archive, Trash2, Save, Tag, ListChecks, BarChart2,
+  ShieldAlert, Archive, Trash2, Save, Tag, ListChecks, BarChart2, Layers,
 } from "@/lib/icons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,10 +12,16 @@ import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
 import { ProjectResponse, MemberResponse } from "@/types";
 import { projectsApi } from "@/lib/api/projects";
+import { useWorkspace } from "@/components/WorkspaceProvider";
+import { getProjectWorkspace, setProjectWorkspace } from "@/lib/workspace-projects";
 
 export default function ProjectSettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const { workspaces, setSelectedWorkspaceId } = useWorkspace();
+
+  const [projectWs, setProjectWs] = useState<string>("");
+  const [wsMoved, setWsMoved]     = useState(false);
 
   const [project, setProject]     = useState<ProjectResponse | null>(null);
   const [members, setMembers]     = useState<MemberResponse[]>([]);
@@ -45,6 +51,19 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ id: 
       setMembers(m);
     }).finally(() => setLoading(false));
   }, [id]);
+
+  // localStorage : à lire après le montage pour éviter un mismatch d'hydratation.
+  useEffect(() => {
+    setProjectWs(getProjectWorkspace(id));
+  }, [id]);
+
+  const handleMoveWorkspace = (workspaceId: string) => {
+    setProjectWorkspace(id, workspaceId);
+    setProjectWs(workspaceId);
+    setSelectedWorkspaceId(workspaceId); // suit le projet dans son nouveau workspace
+    setWsMoved(true);
+    setTimeout(() => setWsMoved(false), 3000);
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -195,6 +214,29 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ id: 
                           <div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform ${visibility === "PUBLIC" ? "translate-x-5" : "translate-x-0"}`} />
                         </div>
                       </label>
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="text-sm font-black text-gray-900 dark:text-gray-100 uppercase tracking-wide">Workspace</h3>
+                      {wsMoved && <span className="text-xs font-semibold text-green-600 dark:text-green-400">✓ Déplacé</span>}
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                      L&apos;espace de travail auquel ce projet est rattaché. Le déplacer le fait apparaître dans le workspace choisi.
+                    </p>
+                    <div className="relative">
+                      <Layers className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <select
+                        aria-label="Workspace du projet"
+                        value={projectWs}
+                        onChange={(e) => handleMoveWorkspace(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all text-sm"
+                      >
+                        {workspaces.map((ws) => (
+                          <option key={ws.id} value={ws.id}>{ws.name}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </>

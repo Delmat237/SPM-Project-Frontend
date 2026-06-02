@@ -40,7 +40,12 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     requestHeaders.set("Content-Type", "application/json");
   }
 
-  if (typeof window !== "undefined") {
+  // Les endpoints d'authentification (login, register, reset-password…) sont publics :
+  // on ne doit JAMAIS y attacher de token, sinon un token expiré ferait échouer le login
+  // avec un 403 renvoyé par le JwtAuthenticationFilter avant même le traitement du login.
+  const isAuthEndpoint = endpoint.startsWith("/api/auth/");
+
+  if (typeof window !== "undefined" && !isAuthEndpoint) {
     const token = localStorage.getItem("token");
     if (token) {
       // A valid JWT has exactly 2 periods (header.payload.signature)
@@ -69,11 +74,17 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   if (!response.ok) {
     // Token expiré ou invalide → nettoyer la session et rediriger vers le login
     if ((response.status === 401 || response.status === 403) && typeof window !== "undefined") {
-      const isAuthEndpoint = endpoint.startsWith("/api/auth/");
       if (!isAuthEndpoint) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        window.location.href = "/auth/login";
+        // Important : effacer aussi le cookie lu par le proxy, sinon il
+        // renvoie /auth/login → /dashboard et on boucle indéfiniment quand le
+        // localStorage et le cookie sont désynchronisés.
+        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
+        // Évite une redirection en boucle si on est déjà sur la page de login.
+        if (!window.location.pathname.startsWith("/auth/login")) {
+          window.location.href = "/auth/login";
+        }
         return new Promise(() => {/* redirect en cours */}) as Promise<T>;
       }
     }

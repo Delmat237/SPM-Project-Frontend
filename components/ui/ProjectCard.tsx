@@ -1,12 +1,14 @@
 "use client";
 
 import React from "react";
-import { Folder, MoreHorizontal, ArrowRight } from "@/lib/icons";
+import { Folder, MoreHorizontal, ArrowRight, Layers } from "@/lib/icons";
 import { Project } from "@/types";
 import Badge from "./Badge";
 import Avatar from "./Avatar";
 import { useRouter } from "next/navigation";
-import { users as allUsers, workspaces } from "@/lib/mock-data";
+import { users as allUsers } from "@/lib/mock-data";
+import { useWorkspace } from "@/components/WorkspaceProvider";
+import { getProjectWorkspace } from "@/lib/workspace-projects";
 
 interface ProjectCardProps {
   project: Project;
@@ -14,6 +16,7 @@ interface ProjectCardProps {
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const router = useRouter();
+  const { workspaces } = useWorkspace();
 
   const members = project.members
     .map((m) => allUsers.find((u) => u.id === m.userId))
@@ -21,7 +24,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     .slice(0, 4);
 
   const extraMembers = project.members.length > 4 ? project.members.length - 4 : 0;
-  const workspace = workspaces.find((item) => item.id === project.workspaceId);
+  const workspace = workspaces.find((item) => item.id === getProjectWorkspace(project.id));
 
   return (
     <div
@@ -48,7 +51,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
           </div>
           <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 line-clamp-1">{project.name}</h3>
           {workspace && (
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold truncate mt-0.5">{workspace.name}</p>
+            <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-[10px] font-bold text-gray-500 dark:text-gray-400 max-w-full">
+              <Layers className="w-2.5 h-2.5 shrink-0" />
+              <span className="truncate">{workspace.name}</span>
+            </span>
           )}
         </div>
       </div>

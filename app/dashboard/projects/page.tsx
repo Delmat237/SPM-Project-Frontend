@@ -8,8 +8,11 @@ import Link from "next/link";
 import { FolderOpen } from "@/lib/icons";
 import { Project, ProjectResponse, adaptProject } from "@/types";
 import { projectsApi } from "@/lib/api/projects";
+import { useWorkspace } from "@/components/WorkspaceProvider";
+import { belongsToWorkspace } from "@/lib/workspace-projects";
 
 export default function ProjectsPage() {
+  const { selectedWorkspace, selectedWorkspaceId } = useWorkspace();
   const [projects, setProjects]   = useState<Project[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState("");
@@ -23,7 +26,9 @@ export default function ProjectsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filteredProjects = projects.filter((p) => {
+  const workspaceProjects = projects.filter((p) => belongsToWorkspace(p.id, selectedWorkspaceId));
+
+  const filteredProjects = workspaceProjects.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || p.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -35,7 +40,9 @@ export default function ProjectsPage() {
         <div>
           <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight">Mes Projets</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1">
-            {loading ? "Chargement…" : `${projects.length} projet${projects.length > 1 ? "s" : ""}`}
+            {loading
+              ? "Chargement…"
+              : `${selectedWorkspace.name} · ${workspaceProjects.length} projet${workspaceProjects.length > 1 ? "s" : ""}`}
           </p>
         </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -15,32 +15,41 @@ import {
   ShieldCheck,
   Sun,
   Moon,
+  Plus,
 } from "@/lib/icons";
 import Avatar from "../ui/Avatar";
+import CreateWorkspaceModal from "../ui/CreateWorkspaceModal";
 import { useTheme } from "@/components/ThemeProvider";
 import { useWorkspace } from "@/components/WorkspaceProvider";
 
 const Sidebar = () => {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [workspaceModalOpen, setWorkspaceModalOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { selectedWorkspace, selectedWorkspaceId, setSelectedWorkspaceId, workspaces } = useWorkspace();
 
-  const [currentUser] = useState<{ name: string; email: string; role: string }>(() => {
-    if (typeof window === "undefined") return { name: "Utilisateur", email: "", role: "user" };
+  // Valeur par défaut identique côté serveur et au premier rendu client (évite
+  // un mismatch d'hydratation) ; le vrai user est chargé depuis localStorage
+  // après le montage.
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string; role: string }>(
+    { name: "Utilisateur", email: "", role: "user" }
+  );
+
+  useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    if (!storedUser) return { name: "Utilisateur", email: "", role: "user" };
+    if (!storedUser) return;
     try {
       const parsed = JSON.parse(storedUser) as Record<string, unknown>;
-      return {
+      setCurrentUser({
         name: (parsed.nom as string) || (parsed.name as string) || "Utilisateur",
         email: (parsed.email as string) || "",
         role: (Array.isArray(parsed.roles) && (parsed.roles.includes("ROLE_ADMIN") || parsed.roles.includes("admin"))) ? "admin" : "user"
-      };
+      });
     } catch {
-      return { name: "Utilisateur", email: "", role: "user" };
+      /* garde la valeur par défaut */
     }
-  });
+  }, []);
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
@@ -97,9 +106,20 @@ const Sidebar = () => {
 
       {!isCollapsed && (
         <div className="px-2 pt-3">
-          <label className="block px-3 mb-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-            Workspace
-          </label>
+          <div className="flex items-center justify-between px-3 mb-1.5">
+            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+              Workspace
+            </label>
+            <button
+              type="button"
+              onClick={() => setWorkspaceModalOpen(true)}
+              title="Nouveau workspace"
+              aria-label="Nouveau workspace"
+              className="text-gray-500 hover:text-white transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
           <div className="px-3 py-2 rounded-lg bg-white/5 border border-white/10">
             <p className="text-xs font-bold text-gray-200 truncate">{selectedWorkspace.name}</p>
             <select
@@ -119,13 +139,22 @@ const Sidebar = () => {
       )}
 
       {isCollapsed && (
-        <div className="px-2 pt-3">
+        <div className="px-2 pt-3 space-y-1.5">
           <button
             type="button"
             title={selectedWorkspace.name}
             className="w-full flex items-center justify-center p-2 rounded-lg bg-white/5 border border-white/10 text-xs font-black text-white"
           >
             {selectedWorkspace.name.slice(0, 1)}
+          </button>
+          <button
+            type="button"
+            onClick={() => setWorkspaceModalOpen(true)}
+            title="Nouveau workspace"
+            aria-label="Nouveau workspace"
+            className="w-full flex items-center justify-center p-2 rounded-lg border border-dashed border-white/15 text-gray-400 hover:text-white hover:border-white/30 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
           </button>
         </div>
       )}
@@ -240,6 +269,11 @@ const Sidebar = () => {
           )}
         </div>
       </div>
+
+      <CreateWorkspaceModal
+        isOpen={workspaceModalOpen}
+        onClose={() => setWorkspaceModalOpen(false)}
+      />
     </aside>
   );
 };

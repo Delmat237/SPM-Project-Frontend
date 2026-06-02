@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Camera, Mail, User, Shield, Key, Github, Eye, EyeOff, Save, CheckCircle2,
+  Camera, Mail, User, Shield, Key, Github, Eye, EyeOff, Save, CheckCircle2, Bell, Clock,
 } from "@/lib/icons";
 import { Google } from "@/lib/icons";
 import Avatar from "@/components/ui/Avatar";
 import { apiClient } from "@/lib/api-client";
+import { remindersApi, type ReminderPreferences } from "@/lib/api/reminders";
 
 function getStrength(pwd: string): number {
   if (!pwd) return 0;
@@ -23,24 +24,58 @@ const STRENGTH_COLORS = ["", "bg-red-500", "bg-orange-400", "bg-yellow-400", "bg
 const STRENGTH_TEXT   = ["", "text-red-500", "text-orange-500", "text-yellow-600", "text-green-500", "text-green-600"];
 const STRENGTH_LABELS = ["", "Très faible", "Faible", "Moyen", "Fort", "Très fort"];
 
+function Switch({ checked, onClick, disabled }: { checked: boolean; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={onClick}
+      disabled={disabled}
+      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+        checked ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"
+      }`}
+    >
+      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${checked ? "translate-x-5" : ""}`} />
+    </button>
+  );
+}
+
+const REMINDER_DELAYS = [
+  { value: 0, label: "Le jour même" },
+  { value: 1, label: "1 jour avant" },
+  { value: 2, label: "2 jours avant" },
+  { value: 3, label: "3 jours avant" },
+  { value: 7, label: "1 semaine avant" },
+];
+
 export default function ProfilePage() {
-  const [currentUser] = useState<{ name: string; email: string; role: string }>(() => {
-    if (typeof window === "undefined") return { name: "Utilisateur", email: "", role: "user" };
-    try {
-      const u = JSON.parse(localStorage.getItem("user") || "{}");
-      return {
-        name:  u.nom || u.name || "Utilisateur",
-        email: u.email || "",
-        role:  (Array.isArray(u.roles) && (u.roles.includes("ROLE_ADMIN") || u.roles.includes("admin"))) ? "admin" : "user",
-      };
-    } catch { return { name: "Utilisateur", email: "", role: "user" }; }
-  });
+  // Défaut identique SSR / 1er rendu client (évite un mismatch d'hydratation) ;
+  // le vrai user est chargé depuis localStorage après le montage.
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string; role: string }>(
+    { name: "Utilisateur", email: "", role: "user" }
+  );
 
   const [activeTab, setActiveTab] = useState("info");
   const [formData, setFormData]   = useState({
-    name: currentUser.name,
+    name: "",
     bio: "",
   });
+
+  useEffect(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem("user") || "{}");
+      const name = u.nom || u.name || "Utilisateur";
+      setCurrentUser({
+        name,
+        email: u.email || "",
+        role:  (Array.isArray(u.roles) && (u.roles.includes("ROLE_ADMIN") || u.roles.includes("admin"))) ? "admin" : "user",
+      });
+      setFormData(prev => ({ ...prev, name }));
+    } catch {
+      /* garde les valeurs par défaut */
+    }
+  }, []);
   const [saving, setSaving]       = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError]   = useState("");
@@ -54,6 +89,54 @@ export default function ProfilePage() {
   const [pwdSaving, setPwdSaving]       = useState(false);
   const [pwdSuccess, setPwdSuccess]     = useState(false);
   const [pwdError, setPwdError]         = useState("");
+
+  // ── Préférences de rappels ──
+  const [prefs, setPrefs] = useState<ReminderPreferences | null>(null);
+  const [prefsLoading, setPrefsLoading] = useState(true);
+  const [prefsSaving, setPrefsSaving] = useState(false);
+  const [pushPermission, setPushPermission] = useState<NotificationPermission | "unsupported">("default");
+
+  useEffect(() => {
+    remindersApi.get()
+      .then(setPrefs)
+      .catch(() => setPrefs({ emailEnabled: true, inAppEnabled: true, pushEnabled: false, daysBefore: 1 }))
+      .finally(() => setPrefsLoading(false));
+    if (typeof window !== "undefined") {
+      setPushPermission("Notification" in window ? Notification.permission : "unsupported");
+    }
+  }, []);
+
+  const savePrefs = async (patch: Partial<ReminderPreferences>) => {
+    setPrefs(prev => (prev ? { ...prev, ...patch } : prev));
+    setPrefsSaving(true);
+    try {
+      const updated = await remindersApi.update(patch);
+      setPrefs(updated);
+    } catch {
+      /* garde la valeur optimiste */
+    } finally {
+      setPrefsSaving(false);
+    }
+  };
+
+  const enableBrowserPush = async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    const perm = await Notification.requestPermission();
+    setPushPermission(perm);
+    if (perm === "granted") {
+      await savePrefs({ pushEnabled: true });
+      new Notification("SPM — Rappels activés", { body: "Vous recevrez les rappels d'échéance ici." });
+    } else {
+      await savePrefs({ pushEnabled: false });
+    }
+  };
+
+  const togglePush = () => {
+    if (!prefs) return;
+    if (prefs.pushEnabled) { savePrefs({ pushEnabled: false }); return; }
+    if (pushPermission === "granted") savePrefs({ pushEnabled: true });
+    else enableBrowserPush();
+  };
 
   const strength = getStrength(newPwd);
   const confirmTouched = confirmPwd.length > 0;
@@ -103,6 +186,7 @@ export default function ProfilePage() {
   const sidebarTabs = [
     { id: "info",     label: "Informations", icon: User },
     { id: "security", label: "Sécurité",     icon: Shield },
+    { id: "reminders", label: "Rappels",     icon: Bell },
     { id: "accounts", label: "Comptes liés", icon: Key },
   ];
 
@@ -272,6 +356,94 @@ export default function ProfilePage() {
                       {pwdSaving ? "Changement…" : "Changer le mot de passe"}
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "reminders" && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 flex-1">
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-8 rounded-[2rem] border border-gray-100 dark:border-gray-600">
+                  <h3 className="text-xl font-black text-gray-900 dark:text-gray-100 mb-1 tracking-tight">Rappels d&apos;échéance</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    Soyez prévenu lorsqu&apos;une tâche qui vous est assignée approche de son échéance.
+                  </p>
+
+                  {prefsLoading || !prefs ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map(i => <div key={i} className="h-16 bg-gray-200 dark:bg-gray-600 rounded-2xl animate-pulse" />)}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {/* Email */}
+                      <div className="flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-500 flex items-center justify-center shrink-0">
+                          <Mail className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">E-mail</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Un rappel envoyé à {currentUser.email || "votre adresse"}.</p>
+                        </div>
+                        <Switch checked={prefs.emailEnabled} onClick={() => savePrefs({ emailEnabled: !prefs.emailEnabled })} />
+                      </div>
+
+                      {/* In-app */}
+                      <div className="flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600">
+                        <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-900/30 text-violet-500 flex items-center justify-center shrink-0">
+                          <Bell className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">Notification in-app</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Affichée dans le centre de notifications de SPM.</p>
+                        </div>
+                        <Switch checked={prefs.inAppEnabled} onClick={() => savePrefs({ inAppEnabled: !prefs.inAppEnabled })} />
+                      </div>
+
+                      {/* Browser push */}
+                      <div className="flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600">
+                        <div className="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/30 text-green-500 flex items-center justify-center shrink-0">
+                          <Bell className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">Push navigateur</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {pushPermission === "unsupported"
+                              ? "Non pris en charge par ce navigateur."
+                              : pushPermission === "denied"
+                                ? "Bloqué — autorisez les notifications dans les réglages du navigateur."
+                                : "Notifications du système, même hors de l'onglet."}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={prefs.pushEnabled && pushPermission === "granted"}
+                          onClick={togglePush}
+                          disabled={pushPermission === "unsupported" || pushPermission === "denied"}
+                        />
+                      </div>
+
+                      {/* Délai */}
+                      <div className="flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600">
+                        <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-500 flex items-center justify-center shrink-0">
+                          <Clock className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">Délai du rappel</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Quand déclencher le rappel avant l&apos;échéance.</p>
+                        </div>
+                        <select
+                          aria-label="Délai du rappel"
+                          value={prefs.daysBefore}
+                          onChange={(e) => savePrefs({ daysBefore: Number(e.target.value) })}
+                          className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        >
+                          {REMINDER_DELAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                        </select>
+                      </div>
+
+                      <p className="text-xs text-gray-400 dark:text-gray-500 pt-1 h-4">
+                        {prefsSaving ? "Enregistrement…" : "Modifications enregistrées automatiquement."}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
