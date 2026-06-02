@@ -1,103 +1,197 @@
-# SPM - Scrum Project Manager
+# SPM — Scrum Project Manager
 
-SPM est une application web de gestion de projet inspiree de Trello, orientee equipes agiles. Elle permet de centraliser les projets, les membres, les taches, les tableaux Kanban, la planification Gantt, les notifications et les vues d'administration dans une interface Next.js moderne.
+> Plateforme de gestion de projets agile style **Jira / Trello** — développée par la **Cellule Projet du Club GI de l'ENSPY**.
 
-Le projet est actuellement en phase prototype frontend. Les donnees metier visibles dans le tableau de bord viennent de mocks TypeScript, et l'authentification utilise temporairement un fichier JSON local avant l'integration du vrai backend.
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38BDF8?logo=tailwindcss)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## Fonctionnalites
+---
 
-- Page d'accueil presentant la plateforme et ses principaux modules.
-- Connexion et inscription via une API locale Next.js.
-- Persistance temporaire des utilisateurs dans `data/users.json`.
-- Tableau de bord avec statistiques, projets recents et taches assignees.
-- Vues projets, Kanban, Gantt, membres, parametres, profil, notifications et administration.
-- Composants reutilisables pour cartes, badges, avatars, modales et layout dashboard.
+## Aperçu
+
+SPM est une application web full-featured de gestion de projets agile. Elle centralise les projets, tâches, équipes, tableaux Kanban, planning Gantt, analytiques et notifications dans une interface moderne, responsive et bilingue (dark/light mode).
+
+Le frontend communique avec un backend **Spring Boot 3 / PostgreSQL** via une API REST sécurisée par JWT.
+
+---
+
+## Fonctionnalités
+
+### Gestion de projets
+- Création, édition, archivage et suppression de projets
+- Visibilité publique / privée
+- Tableau de bord avec statistiques en temps réel
+
+### Vues par projet (6 onglets)
+
+| Vue | Description |
+|---|---|
+| **Kanban** | Tableau drag & drop — 5 colonnes : À faire · En cours · En revue · Bloqué · Terminé |
+| **Backlog** | Liste triable/filtrable avec groupement par statut ou priorité, indicateurs de retard |
+| **Gantt** | Timeline mensuelle avec barres colorées, tooltips et légende |
+| **Analytics** | KPIs, taux de complétion (donut), vélocité par sprint, burndown chart, export CSV/JSON |
+| **Membres** | Invitation par email, gestion des rôles (Owner · Admin · Member · Reader), retrait |
+| **Paramètres** | Édition du projet, workflow, notifications, archivage, suppression avec confirmation |
+
+### Gestion des tâches
+- Création rapide depuis le Kanban ou le Backlog
+- **Détail de tâche complet** : titre, description, statut, priorité, assignation, échéance
+- **Sous-tâches** : création et toggle (terminé / en cours) avec barre de progression
+- **Commentaires** : ajout, édition, suppression en temps réel
+- **Pièces jointes** : upload, téléchargement, suppression
+- Autosave automatique (800 ms après la dernière frappe)
+
+### Collaboration & notifications
+- Notifications en temps réel (commentaires, mentions, invitations, changements de statut)
+- Filtrage des notifications par type (Toutes · Non lues · Mentions)
+- Marquer comme lu individuellement ou en masse
+
+### Compte & profil
+- Authentification JWT (login / register / reset password / OTP)
+- SSO Google
+- Profil utilisateur : édition du nom, bio, photo de profil
+- Changement de mot de passe avec indicateur de robustesse
+- Comptes liés (Google, GitHub)
+- Mode sombre / clair persistant
+
+---
 
 ## Stack technique
 
-- Next.js 16 avec App Router
-- React 19
-- TypeScript
-- Tailwind CSS 4
-- API routes Next.js pour simuler le backend d'authentification
-- Fichier JSON local pour les utilisateurs de test
+| Catégorie | Technologie |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| UI | React 19 + Tailwind CSS 4 |
+| Langage | TypeScript 5 |
+| Temps réel | STOMP / SockJS (WebSocket) |
+| Communication API | Fetch natif + couche `apiClient` avec injection JWT |
+| Auth | JWT Bearer (Spring Security HS512) |
+| Icônes | SVG inline custom (`lib/icons.tsx`) |
 
-## Authentification locale JSON
+---
 
-Pour le moment, l'inscription et la connexion passent par ces routes internes :
+## Prérequis
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
+- Node.js ≥ 18
+- npm ≥ 9
+- Backend SPM ([`SPM-Project-Backend`](https://github.com/club-genie-informatique-enspy/SPM-Project-Backend)) démarré sur le port **8082**
 
-Les utilisateurs sont stockes dans :
-
-```txt
-data/users.json
-```
-
-Comptes de test disponibles :
-
-```txt
-azangue.delmat@example.com / password123
-negou.donald@example.com / password123
-```
-
-Apres connexion, le frontend stocke un token local de demonstration et l'utilisateur courant dans `localStorage`.
-
-Important : les mots de passe sont stockes en clair dans le JSON uniquement pour faciliter le prototype. Cette approche ne doit pas etre utilisee en production. Le futur backend devra gerer le hash des mots de passe, les sessions ou JWT reels, la validation serveur avancee et les permissions.
+---
 
 ## Installation
 
-Installer les dependances :
-
 ```bash
+# Cloner le dépôt
+git clone https://github.com/club-genie-informatique-enspy/SPM-Project-Frontend.git
+cd SPM-Project-Frontend
+
+# Installer les dépendances
 npm install
+
+# Configurer l'environnement
+cp .env.example .env.local
+# Éditer .env.local : NEXT_PUBLIC_API_URL=http://localhost:8082
 ```
 
-Lancer le serveur de developpement :
+---
+
+## Lancer l'application
 
 ```bash
+# Développement (hot reload)
 npm run dev
+# → http://localhost:3000
+
+# Production
+npm run build
+npm run start
 ```
 
-Ouvrir ensuite :
+---
 
-```txt
-http://localhost:3000
-```
-
-## Scripts
+## Scripts disponibles
 
 ```bash
-npm run dev      # demarre Next.js en developpement
-npm run build    # compile l'application pour la production
-npm run start    # lance la version compilee
-npm run lint     # execute ESLint
+npm run dev      # Serveur de développement Next.js
+npm run build    # Compilation production
+npm run start    # Lancement de la version compilée
+npm run lint     # Analyse ESLint
 ```
+
+---
 
 ## Structure du projet
 
-```txt
+```
 app/
-  api/auth/              # routes API locales pour login/register
-  auth/                  # pages connexion, inscription, reset password
-  dashboard/             # vues principales de l'application
+├── auth/                        # Login, register, reset password, OTP
+├── dashboard/
+│   ├── page.tsx                 # Tableau de bord
+│   ├── projects/
+│   │   ├── page.tsx             # Liste des projets
+│   │   ├── new/                 # Création de projet
+│   │   └── [id]/
+│   │       ├── kanban/          # Vue Kanban
+│   │       ├── backlog/         # Vue Backlog
+│   │       ├── gantt/           # Vue Gantt / Timeline
+│   │       ├── analytics/       # Analytics & exports
+│   │       ├── members/         # Gestion des membres
+│   │       ├── settings/        # Paramètres du projet
+│   │       └── tasks/[taskId]/  # Détail d'une tâche
+│   ├── notifications/           # Centre de notifications
+│   ├── profile/                 # Profil utilisateur
+│   └── admin/                   # Administration du compte
+
 components/
-  layout/                # navbar, sidebar, layout dashboard
-  ui/                    # composants UI reutilisables
-data/
-  users.json             # stockage temporaire des utilisateurs
+├── layout/                      # Sidebar, Navbar, DashboardLayout
+└── ui/                          # TaskCard, ProjectCard, Modal, Badge, Avatar…
+
 lib/
-  mock-data.ts           # donnees de demonstration projets/taches
-  icons.tsx              # exports centralises des icones
+├── api/
+│   ├── projects.ts              # CRUD projets + membres
+│   ├── tasks.ts                 # CRUD tâches + kanban/gantt/subtasks
+│   ├── comments.ts              # CRUD commentaires
+│   ├── attachments.ts           # Upload / téléchargement pièces jointes
+│   ├── notifications.ts         # Notifications + mark-as-read
+│   └── analytics.ts             # Summary, burndown, velocity, export
+├── api-client.ts                # Fetch wrapper avec JWT Bearer auto
+├── icons.tsx                    # Icônes SVG centralisées
+└── mock-data.ts                 # Données de fallback (si backend indisponible)
+
 types/
-  index.ts               # types metier TypeScript
+└── index.ts                     # Types TypeScript (Task, Project, Comment…)
 ```
 
-## Prochaines etapes
+---
 
-- Remplacer `data/users.json` par le vrai backend.
-- Synchroniser les utilisateurs authentifies avec les projets et les taches.
-- Ajouter une protection des routes dashboard.
-- Brancher les actions CRUD des projets et taches sur une API persistante.
-- Ajouter des tests pour les routes d'authentification et les flux critiques.
+## Variables d'environnement
+
+```env
+# .env.local
+NEXT_PUBLIC_API_URL=http://localhost:8082
+```
+
+---
+
+## Contributeurs
+
+| Nom | Email |
+|---|---|
+| Azangue Delmat | azangueleonel9@gmail.com |
+| Tipainess | tipainess@gmail.com |
+| Samuel Ftagat | samuelftagat@gmail.com |
+| Maevat Chounou | maevatchounou@gmail.com |
+
+---
+
+## Liens
+
+- **Backend** : [SPM-Project-Backend](https://github.com/club-genie-informatique-enspy/SPM-Project-Backend)
+- **Organisation** : [Club GI ENSPY](https://github.com/club-genie-informatique-enspy)
+
+---
+
+*Club Génie Informatique — École Nationale Supérieure Polytechnique de Yaoundé*
