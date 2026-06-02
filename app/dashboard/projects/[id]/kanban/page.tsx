@@ -19,22 +19,7 @@ import Link from "next/link";
 import { TaskStatus, Task, MemberResponse, KanbanResponse, adaptTask } from "@/types";
 import { tasksApi } from "@/lib/api/tasks";
 import { projectsApi } from "@/lib/api/projects";
-
-const COLUMN_COLORS: Record<TaskStatus, string> = {
-  todo:        "bg-gray-400",
-  in_progress: "bg-blue-500",
-  in_review:   "bg-violet-500",
-  done:        "bg-green-500",
-  blocked:     "bg-red-500",
-};
-
-const COLUMNS: { title: string; status: TaskStatus }[] = [
-  { title: "À faire",  status: "todo" },
-  { title: "En cours", status: "in_progress" },
-  { title: "En revue", status: "in_review" },
-  { title: "Bloqué",   status: "blocked" },
-  { title: "Terminé",  status: "done" },
-];
+import { getBoardConfig, defaultColumns, type BoardColumn } from "@/lib/templates";
 
 export default function KanbanPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -43,9 +28,14 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
   const [projectKey, setProjectKey]   = useState("");
   const [tasks, setTasks]             = useState<Task[]>([]);
   const [members, setMembers]         = useState<MemberResponse[]>([]);
+  const [columns, setColumns]         = useState<BoardColumn[]>(defaultColumns());
   const [loading, setLoading]         = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [createStatus, setCreateStatus] = useState<TaskStatus | null>(null);
+
+  useEffect(() => {
+    setColumns(getBoardConfig(id).columns);
+  }, [id]);
 
   useEffect(() => {
     Promise.all([
@@ -146,7 +136,7 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
       <main className="flex-1 overflow-x-auto bg-[#f4f5f7] dark:bg-gray-900 p-6">
         {loading ? (
           <div className="flex gap-4 h-full">
-            {COLUMNS.map((col) => (
+            {columns.map((col) => (
               <div key={col.status} className="w-72 flex-shrink-0">
                 <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-3 animate-pulse" />
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -157,7 +147,7 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
           </div>
         ) : (
           <div className="flex gap-4 h-full min-w-max">
-            {COLUMNS.map((column) => {
+            {columns.map((column) => {
               const columnTasks = tasks.filter(t => t.status === column.status);
               return (
                 <div
@@ -169,7 +159,7 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
                   {/* Column header */}
                   <div className="flex items-center justify-between mb-3 px-1">
                     <div className="flex items-center gap-2">
-                      <div className={`w-2.5 h-2.5 rounded-full ${COLUMN_COLORS[column.status]}`} />
+                      <div className={`w-2.5 h-2.5 rounded-full ${column.color}`} />
                       <span className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{column.title}</span>
                       <span className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-[10px] font-black px-1.5 py-0.5 rounded-full">
                         {columnTasks.length}

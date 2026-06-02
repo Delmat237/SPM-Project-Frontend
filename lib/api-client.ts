@@ -77,7 +77,14 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
       if (!isAuthEndpoint) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        window.location.href = "/auth/login";
+        // Important : effacer aussi le cookie lu par le proxy, sinon il
+        // renvoie /auth/login → /dashboard et on boucle indéfiniment quand le
+        // localStorage et le cookie sont désynchronisés.
+        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
+        // Évite une redirection en boucle si on est déjà sur la page de login.
+        if (!window.location.pathname.startsWith("/auth/login")) {
+          window.location.href = "/auth/login";
+        }
         return new Promise(() => {/* redirect en cours */}) as Promise<T>;
       }
     }

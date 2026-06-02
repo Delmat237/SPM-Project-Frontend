@@ -16,6 +16,7 @@ import Badge from "@/components/ui/Badge";
 import { Task, Project, TaskStatus, Priority, ProjectResponse, TaskResponse, PageResponse } from "@/types";
 import { useWorkspace } from "@/components/WorkspaceProvider";
 import { apiClient } from "@/lib/api-client";
+import { getProjectWorkspace } from "@/lib/workspace-projects";
 
 export default function DashboardPage() {
   const { selectedWorkspace, selectedWorkspaceId } = useWorkspace();
@@ -75,7 +76,7 @@ export default function DashboardPage() {
         // Mapper les projets du backend vers le type Project du frontend
         const mappedProjects: Project[] = rawProjects.map((bp: ProjectResponse) => ({
           id: String(bp.id),
-          workspaceId: selectedWorkspaceId, // Associer au workspace actif pour un affichage fluide
+          workspaceId: getProjectWorkspace(String(bp.id)), // Rattacher chaque projet à SON workspace
           name: bp.name,
           description: bp.description || "",
           key: bp.projectKey || "",

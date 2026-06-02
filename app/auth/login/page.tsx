@@ -28,7 +28,7 @@ export default function LoginPage() {
 
       if (data.token) {
         localStorage.setItem("token", data.token);
-        // Enregistrer également dans les cookies pour le middleware Next.js
+        // Enregistrer également dans les cookies pour le proxy Next.js
         document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
       }
       if (data.user)   localStorage.setItem("user", JSON.stringify(data.user));
